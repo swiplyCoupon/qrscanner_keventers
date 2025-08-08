@@ -10,14 +10,16 @@
     import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     // ✅ Replace with your Firebase config
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_AUTH_DOMAIN",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_STORAGE_BUCKET",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
-    };
+   const firebaseConfig = {
+    apiKey: "AIzaSyAe7U1v7pszSh2NjV82JND9DNNnGxs_PCQ",
+    authDomain: "mingler1-ae.firebaseapp.com",
+    projectId: "mingler1-ae",
+    storageBucket: "mingler1-ae.appspot.com",
+    messagingSenderId: "745303082451",
+    appId: "1:745303082451:web:d4379cf92a334827741b26",
+    measurementId: "G-ER61EHLDCN"
+  };
+
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
