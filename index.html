@@ -23,29 +23,55 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    let currentCouponId = null; // store scanned coupon ID
+
     async function onScanSuccess(decodedText) {
       const couponId = decodedText.trim();
-      const ref = doc(db, "coupons", couponId);
+      currentCouponId = couponId; // store for redeem button
 
       try {
+        const ref = doc(db, "coupons", couponId);
         const snap = await getDoc(ref);
+
         if (!snap.exists()) {
           showMessage("❌ Coupon not found", "error");
+          document.getElementById("redeemBtn").style.display = "none";
           return;
         }
 
         const data = snap.data();
         if (data.redeemed) {
           showMessage("⚠️ Coupon already redeemed", "warning");
+          document.getElementById("redeemBtn").style.display = "none";
           return;
         }
 
+        showMessage(`✅ Coupon valid! User: ${data.userId}`, "success");
+        document.getElementById("redeemBtn").style.display = "inline-block";
+
+      } catch (err) {
+        showMessage("❌ Error: " + err.message, "error");
+        document.getElementById("redeemBtn").style.display = "none";
+      }
+    }
+
+    async function redeemCoupon() {
+      if (!currentCouponId) {
+        showMessage("⚠️ No coupon scanned", "warning");
+        return;
+      }
+
+      try {
+        const ref = doc(db, "coupons", currentCouponId);
         await updateDoc(ref, {
           redeemed: true,
           redeemedAt: serverTimestamp()
         });
 
-        showMessage("✅ Coupon redeemed successfully!", "success");
+        showMessage("🎉 Coupon redeemed successfully!", "success");
+        document.getElementById("redeemBtn").style.display = "none";
+        currentCouponId = null;
+
       } catch (err) {
         showMessage("❌ Error: " + err.message, "error");
       }
@@ -60,17 +86,15 @@
 
     window.onload = () => {
       const scanner = new Html5Qrcode("reader");
-
       scanner.start(
-        { facingMode: { exact: "environment" } }, // Force back camera
-        {
-          fps: 10,
-          qrbox: 250
-        },
+        { facingMode: { exact: "environment" } },
+        { fps: 10, qrbox: 250 },
         onScanSuccess
       ).catch(err => {
         showMessage("❌ Camera error: " + err, "error");
       });
+
+      document.getElementById("redeemBtn").addEventListener("click", redeemCoupon);
     };
   </script>
   <style>
@@ -119,12 +143,27 @@
       background-color: #ff9800;
       color: black;
     }
+    #redeemBtn {
+      display: none;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #FFD700;
+      color: black;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #redeemBtn:hover {
+      background-color: #e6c200;
+    }
   </style>
 </head>
 <body>
   <h1>🥤 Keventers Coupon Scanner</h1>
-  <p>Point the camera at the customer's QR code to redeem.</p>
+  <p>Point the camera at the customer's QR code to verify. Click redeem to confirm.</p>
   <div id="reader"></div>
   <div id="message"></div>
+  <button id="redeemBtn">✅ Redeem Now</button>
 </body>
 </html>
