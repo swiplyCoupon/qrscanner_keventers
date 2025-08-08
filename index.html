@@ -23,12 +23,10 @@
     const db = getFirestore(app);
 
     let currentCouponId = null;
-    let ignoreScans = false;
+    let scanner = null; // store scanner instance
     let countdownInterval = null;
 
     async function onScanSuccess(decodedText) {
-      if (ignoreScans) return;
-
       const couponId = decodedText.trim();
       currentCouponId = couponId;
 
@@ -49,7 +47,9 @@
           return;
         }
 
-        showMessage(`✅ Coupon valid! User: ${data.userId}`, "success");
+        // ✅ Show company name if available
+        const companyDisplay = data.companyName ? ` (${data.companyName})` : "";
+        showMessage(`✅ Coupon valid${companyDisplay}`, "success");
         document.getElementById("redeemBtn").style.display = "inline-block";
 
       } catch (err) {
@@ -75,8 +75,12 @@
         document.getElementById("redeemBtn").style.display = "none";
         currentCouponId = null;
 
-        // Pause scanning for 4 seconds with countdown
-        ignoreScans = true;
+        // 🛑 Stop scanner during cooldown
+        if (scanner) {
+          scanner.stop().catch(e => console.error("Scanner stop error:", e));
+        }
+
+        // Countdown before restarting scanner
         let remaining = 4;
         countdownInterval = setInterval(() => {
           remaining--;
@@ -85,8 +89,16 @@
               `🎉 Coupon redeemed successfully! ⏳ Scanning resumes in ${remaining}s`;
           } else {
             clearInterval(countdownInterval);
-            ignoreScans = false;
             showMessage("✅ Ready to scan next coupon", "success");
+
+            // 🔄 Restart scanner
+            scanner.start(
+              { facingMode: { exact: "environment" } },
+              { fps: 10, qrbox: 250 },
+              onScanSuccess
+            ).catch(err => {
+              showMessage("❌ Camera error: " + err, "error");
+            });
           }
         }, 1000);
 
@@ -103,7 +115,7 @@
     }
 
     window.onload = () => {
-      const scanner = new Html5Qrcode("reader");
+      scanner = new Html5Qrcode("reader");
       scanner.start(
         { facingMode: { exact: "environment" } },
         { fps: 10, qrbox: 250 },
