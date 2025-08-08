@@ -9,17 +9,16 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // ✅ Replace with your Firebase config
-   const firebaseConfig = {
-    apiKey: "AIzaSyAe7U1v7pszSh2NjV82JND9DNNnGxs_PCQ",
-    authDomain: "mingler1-ae.firebaseapp.com",
-    projectId: "mingler1-ae",
-    storageBucket: "mingler1-ae.appspot.com",
-    messagingSenderId: "745303082451",
-    appId: "1:745303082451:web:d4379cf92a334827741b26",
-    measurementId: "G-ER61EHLDCN"
-  };
-
+    // ✅ Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyAe7U1v7pszSh2NjV82JND9DNNnGxs_PCQ",
+      authDomain: "mingler1-ae.firebaseapp.com",
+      projectId: "mingler1-ae",
+      storageBucket: "mingler1-ae.appspot.com",
+      messagingSenderId: "745303082451",
+      appId: "1:745303082451:web:d4379cf92a334827741b26",
+      measurementId: "G-ER61EHLDCN"
+    };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -31,13 +30,13 @@
       try {
         const snap = await getDoc(ref);
         if (!snap.exists()) {
-          alert("❌ Coupon not found");
+          showMessage("❌ Coupon not found", "error");
           return;
         }
 
         const data = snap.data();
         if (data.redeemed) {
-          alert("⚠️ Coupon already redeemed");
+          showMessage("⚠️ Coupon already redeemed", "warning");
           return;
         }
 
@@ -46,34 +45,86 @@
           redeemedAt: serverTimestamp()
         });
 
-        alert("✅ Coupon redeemed successfully!");
+        showMessage("✅ Coupon redeemed successfully!", "success");
       } catch (err) {
-        alert("❌ Error: " + err.message);
+        showMessage("❌ Error: " + err.message, "error");
       }
     }
 
+    function showMessage(text, type) {
+      const messageBox = document.getElementById("message");
+      messageBox.innerText = text;
+      messageBox.className = type;
+      messageBox.style.display = "block";
+    }
+
     window.onload = () => {
-      const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
-      scanner.render(onScanSuccess);
+      const scanner = new Html5Qrcode("reader");
+
+      scanner.start(
+        { facingMode: { exact: "environment" } }, // Force back camera
+        {
+          fps: 10,
+          qrbox: 250
+        },
+        onScanSuccess
+      ).catch(err => {
+        showMessage("❌ Camera error: " + err, "error");
+      });
     };
   </script>
   <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
-      background-color: #fafafa;
+      background-color: #121212;
       margin: 0;
       padding: 0;
+      color: white;
+    }
+    h1 {
+      margin-top: 20px;
+      font-size: 24px;
+      color: #FFD700;
+    }
+    p {
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #ccc;
     }
     #reader {
-      width: 100%;
+      width: 90%;
+      max-width: 400px;
+      margin: auto;
+      border: 2px solid #FFD700;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    #message {
+      display: none;
       margin-top: 20px;
+      padding: 10px;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+    #message.success {
+      background-color: #4CAF50;
+      color: white;
+    }
+    #message.error {
+      background-color: #f44336;
+      color: white;
+    }
+    #message.warning {
+      background-color: #ff9800;
+      color: black;
     }
   </style>
 </head>
 <body>
-  <h1>Keventers Coupon Scanner</h1>
+  <h1>🥤 Keventers Coupon Scanner</h1>
   <p>Point the camera at the customer's QR code to redeem.</p>
   <div id="reader"></div>
+  <div id="message"></div>
 </body>
 </html>
