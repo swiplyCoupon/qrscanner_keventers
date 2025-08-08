@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Keventers Coupon Scanner</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    // ✅ Replace with your Firebase config
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function onScanSuccess(decodedText) {
+      const couponId = decodedText.trim();
+      const ref = doc(db, "coupons", couponId);
+
+      try {
+        const snap = await getDoc(ref);
+        if (!snap.exists()) {
+          alert("❌ Coupon not found");
+          return;
+        }
+
+        const data = snap.data();
+        if (data.redeemed) {
+          alert("⚠️ Coupon already redeemed");
+          return;
+        }
+
+        await updateDoc(ref, {
+          redeemed: true,
+          redeemedAt: serverTimestamp()
+        });
+
+        alert("✅ Coupon redeemed successfully!");
+      } catch (err) {
+        alert("❌ Error: " + err.message);
+      }
+    }
+
+    window.onload = () => {
+      const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+      scanner.render(onScanSuccess);
+    };
+  </script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #fafafa;
+      margin: 0;
+      padding: 0;
+    }
+    #reader {
+      width: 100%;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Keventers Coupon Scanner</h1>
+  <p>Point the camera at the customer's QR code to redeem.</p>
+  <div id="reader"></div>
+</body>
+</html>
