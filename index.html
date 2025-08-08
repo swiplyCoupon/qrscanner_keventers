@@ -23,11 +23,14 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    let currentCouponId = null; // store scanned coupon ID
+    let currentCouponId = null;
+    let ignoreScans = false; // 🚫 ignore scans temporarily
 
     async function onScanSuccess(decodedText) {
+      if (ignoreScans) return; // skip if we're in cooldown mode
+
       const couponId = decodedText.trim();
-      currentCouponId = couponId; // store for redeem button
+      currentCouponId = couponId;
 
       try {
         const ref = doc(db, "coupons", couponId);
@@ -71,6 +74,12 @@
         showMessage("🎉 Coupon redeemed successfully!", "success");
         document.getElementById("redeemBtn").style.display = "none";
         currentCouponId = null;
+
+        // ⏳ Start 3s cooldown
+        ignoreScans = true;
+        setTimeout(() => {
+          ignoreScans = false;
+        }, 3000);
 
       } catch (err) {
         showMessage("❌ Error: " + err.message, "error");
@@ -160,7 +169,7 @@
   </style>
 </head>
 <body>
-  <h1>🥤 Keventers Coupon Scanner</h1>
+  <h1>Swiply Coupon Scanner</h1>
   <p>Point the camera at the customer's QR code to verify. Click redeem to confirm.</p>
   <div id="reader"></div>
   <div id="message"></div>
