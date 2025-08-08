@@ -3,13 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Keventers Coupon Scanner</title>
+  <title>Swiply Coupon Scanner</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // ✅ Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyAe7U1v7pszSh2NjV82JND9DNNnGxs_PCQ",
       authDomain: "mingler1-ae.firebaseapp.com",
@@ -24,10 +23,11 @@
     const db = getFirestore(app);
 
     let currentCouponId = null;
-    let ignoreScans = false; // 🚫 ignore scans temporarily
+    let ignoreScans = false;
+    let countdownInterval = null;
 
     async function onScanSuccess(decodedText) {
-      if (ignoreScans) return; // skip if we're in cooldown mode
+      if (ignoreScans) return;
 
       const couponId = decodedText.trim();
       currentCouponId = couponId;
@@ -71,15 +71,24 @@
           redeemedAt: serverTimestamp()
         });
 
-        showMessage("🎉 Coupon redeemed successfully!", "success");
+        showMessage("🎉 Coupon redeemed successfully! ⏳ Scanning resumes in 4s", "success");
         document.getElementById("redeemBtn").style.display = "none";
         currentCouponId = null;
 
-        // ⏳ Start 3s cooldown
+        // Pause scanning for 4 seconds with countdown
         ignoreScans = true;
-        setTimeout(() => {
-          ignoreScans = false;
-        }, 3000);
+        let remaining = 4;
+        countdownInterval = setInterval(() => {
+          remaining--;
+          if (remaining > 0) {
+            document.getElementById("message").innerText =
+              `🎉 Coupon redeemed successfully! ⏳ Scanning resumes in ${remaining}s`;
+          } else {
+            clearInterval(countdownInterval);
+            ignoreScans = false;
+            showMessage("✅ Ready to scan next coupon", "success");
+          }
+        }, 1000);
 
       } catch (err) {
         showMessage("❌ Error: " + err.message, "error");
